@@ -1,6 +1,6 @@
 import yaml
 import numpy as np
-from simulation import MIMOOFDMSimulation
+from src.simulation import MIMOOFDMSimulation
 
 with open("config.yaml", "r") as f:
     config = yaml.safe_load(f)

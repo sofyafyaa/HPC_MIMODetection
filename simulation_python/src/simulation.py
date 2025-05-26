@@ -2,9 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-from modulations import qam_modulate, qam_demodulate
-from detection import zf_detector, mmse_detector
-from signals import generate_bits, generate_channel, generate_noise
+from src.modulations import qam_modulate, qam_demodulate
+from src.detection import zf_detector, mmse_detector
+from src.signals import generate_bits, generate_channel, generate_noise
 
 
 class MIMOOFDMSimulation:
