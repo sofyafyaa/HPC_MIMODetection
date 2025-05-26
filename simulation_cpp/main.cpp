@@ -8,31 +8,36 @@
 #include <fftw3.h>
 #include <omp.h>
 
+
 using namespace std;
 using Complex = complex<float>;
 using namespace chrono;
+
 
 int bits_per_symbol(int M) {
     return static_cast<int>(log2(M));
 }
 
+
 vector<Complex> generate_qam_constellation(int M) {
     int m = static_cast<int>(sqrt(M));
+    
     vector<Complex> constellation;
     for (int i = 0; i < m; ++i)
         for (int j = 0; j < m; ++j)
             constellation.emplace_back(2 * j - m + 1, 2 * i - m + 1);
 
-    float norm = 0.0;
+    float norm_val = 0.0;
     for (auto &c : constellation)
-        norm += norm(c);
-    norm = sqrt(norm / M);
+        norm_val += norm(c);
+    norm_val = sqrt(norm_val / M);
 
     for (auto &c : constellation)
-        c /= norm;
+        c /= norm_val;
 
     return constellation;
 }
+
 
 vector<int> bits_to_decimal(const vector<int> &bits, int k) {
     int n = bits.size() / k;
@@ -45,6 +50,7 @@ vector<int> bits_to_decimal(const vector<int> &bits, int k) {
     return dec;
 }
 
+
 vector<int> decimal_to_bits(int val, int k) {
     vector<int> bits(k, 0);
     for (int i = k - 1; i >= 0; --i) {
@@ -53,6 +59,7 @@ vector<int> decimal_to_bits(int val, int k) {
     }
     return bits;
 }
+
 
 void generate_bits(vector<vector<vector<int>>> &bits, int n_symbols, int n_tx, int n_subcarriers, int k) {
     random_device rd;
@@ -63,6 +70,7 @@ void generate_bits(vector<vector<vector<int>>> &bits, int n_symbols, int n_tx, i
             for (int i = 0; i < n_subcarriers * k; ++i)
                 bits[s][tx][i] = dis(gen);
 }
+
 
 vector<vector<vector<Complex>>> qam_modulate(const vector<vector<vector<int>>> &bits, int M) {
     int n_symbols = bits.size();
@@ -86,7 +94,8 @@ vector<vector<vector<Complex>>> qam_modulate(const vector<vector<vector<int>>> &
     return symbols;
 }
 
-vector<vector<vector<Complex>>> generate_channel(int n_symbols, int n_rx, int n_tx, int n_subcarriers) {
+
+vector<vector<vector<vector<Complex>>>> generate_channel(int n_symbols, int n_rx, int n_tx, int n_subcarriers) {
     random_device rd;
     mt19937 gen(rd());
     normal_distribution<float> dist(0.0, 1.0);
@@ -98,10 +107,10 @@ vector<vector<vector<Complex>>> generate_channel(int n_symbols, int n_rx, int n_
         for (int sc = 0; sc < n_subcarriers; ++sc)
             for (int rx = 0; rx < n_rx; ++rx)
                 for (int tx = 0; tx < n_tx; ++tx)
-                    H[s][sc][rx][tx] = Complex(dist(gen), dist(gen)) / sqrt(2.0);
-
+                    H[s][sc][rx][tx] = Complex(dist(gen), dist(gen)) / static_cast<float>(sqrt(2.0));
     return H;
 }
+
 
 vector<vector<vector<Complex>>> generate_noise(int n_symbols, int n_rx, int n_subcarriers, float noise_var) {
     random_device rd;
@@ -115,6 +124,7 @@ vector<vector<vector<Complex>>> generate_noise(int n_symbols, int n_rx, int n_su
                 noise[s][sc][rx] = Complex(dist(gen), dist(gen));
     return noise;
 }
+
 
 vector<vector<vector<Complex>>> zf_detector(
     const vector<vector<vector<vector<Complex>>>> &H,
@@ -147,6 +157,7 @@ vector<vector<vector<Complex>>> zf_detector(
     return x_hat;
 }
 
+
 float calculate_ber(const vector<vector<vector<int>>> &bits,
                     const vector<vector<vector<Complex>>> &rx_symbols,
                     int M) {
@@ -177,6 +188,8 @@ float calculate_ber(const vector<vector<vector<int>>> &bits,
     return static_cast<float>(errors) / total;
 }
 
+
+
 int main() {
     const int n_tx = 2, n_rx = 2;
     const int n_subcarriers = 64;
@@ -185,20 +198,28 @@ int main() {
     const vector<int> snr_db_range = {0, 5, 10, 15, 20, 25, 30};
     const int k = bits_per_symbol(mod_order);
 
-    ofstream fout("ber_results.csv");
+    ofstream fout("../results/ber_results.csv");
     fout << "SNR_dB,BER_ZF\n";
 
     for (int snr_db : snr_db_range) {
         float snr_lin = pow(10.0, snr_db / 10.0);
         float noise_var = 1.0 / snr_lin;
 
+
+        //////////////// TX ///////////////
         vector<vector<vector<int>>> bits(n_symbols, vector<vector<int>>(n_tx, vector<int>(n_subcarriers * k)));
         generate_bits(bits, n_symbols, n_tx, n_subcarriers, k);
         auto symbols = qam_modulate(bits, mod_order);
+        //////////////// TX ///////////////
 
+
+        ///////////// CHANNEL /////////////
         auto H = generate_channel(n_symbols, n_rx, n_tx, n_subcarriers);
         auto noise = generate_noise(n_symbols, n_rx, n_subcarriers, noise_var);
+        ///////////// CHANNEL /////////////
 
+
+        //////////////// RX ///////////////
         vector<vector<vector<Complex>>> y(n_symbols, vector<vector<Complex>>(n_subcarriers, vector<Complex>(n_rx)));
         for (int s = 0; s < n_symbols; ++s)
             for (int sc = 0; sc < n_subcarriers; ++sc)
@@ -207,15 +228,19 @@ int main() {
                     for (int tx = 0; tx < n_tx; ++tx)
                         y[s][sc][rx] += H[s][sc][rx][tx] * symbols[s][sc][tx];
                 }
+        //////////////// RX ///////////////
 
+
+        //////////// DETECTION ////////////
         auto start = high_resolution_clock::now();
         auto x_hat_zf = zf_detector(H, y);
         auto end = high_resolution_clock::now();
         float time_zf = duration<float>(end - start).count();
+        //////////// DETECTION ////////////
+
 
         float ber_zf = calculate_ber(bits, x_hat_zf, mod_order);
         fout << snr_db << "," << ber_zf << endl;
-
         cout << "SNR: " << snr_db << " dB, ZF-BER: " << ber_zf << ", Time: " << time_zf << " sec" << endl;
     }
 
