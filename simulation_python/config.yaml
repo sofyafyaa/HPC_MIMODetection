@@ -1,0 +1,6 @@
+n_tx: 16
+n_rx: 64
+n_subcarriers: 1024
+mod_order: 64
+snr_db_range: auto
+n_symbols: 100
