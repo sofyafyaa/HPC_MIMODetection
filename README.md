@@ -18,8 +18,6 @@ $$
 \hat{x}_{\text{MMSE}} = \left( H^H H + \sigma^2 I \right)^{-1} H^H y
 $$
 
----
-
 ## Simulation Pipeline
 
 1) Bit signal generation
