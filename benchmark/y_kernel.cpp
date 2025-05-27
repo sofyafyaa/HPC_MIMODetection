@@ -101,3 +101,16 @@ int main() {
 
     // Copy result back (optional)
     cudaMemcpy(y_gpu.data(), d_y, sizeof(cuFloatComplex) * y_size, cudaMemcpyDeviceToHost);
+
+
+
+    // Print benchmark
+    cout << "Size: " << n_subcarriers
+         << " | CPU: " << cpu_time << " s"
+         << " | GPU: " << gpu_time << " s"
+         << " | Speedup: " << (cpu_time / gpu_time) << "x" << endl;
+
+    cudaFree(d_H); cudaFree(d_x); cudaFree(d_noise); cudaFree(d_y);
+    return 0;
+}
+
