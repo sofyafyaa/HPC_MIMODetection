@@ -48,42 +48,12 @@ float calculate_ber(const vector<vector<vector<int>>> &bits,
 }
 
 
-// void apply_fft(vector<Complex>& data) {
-//     int N = data.size();
-//     fftwf_complex *in = reinterpret_cast<fftwf_complex*>(data.data());
-//     fftwf_complex *out = (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * N);
-//     fftwf_plan p = fftwf_plan_dft_1d(N, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
-//     fftwf_execute(p);
-
-//     for (int i = 0; i < N; ++i)
-//         data[i] = Complex(out[i][0], out[i][1]);
-
-//     fftwf_destroy_plan(p);
-//     fftwf_free(out);
-// }
-
-
-// void apply_ifft(vector<Complex>& data) {
-//     int N = data.size();
-//     fftwf_complex *in = reinterpret_cast<fftwf_complex*>(data.data());
-//     fftwf_complex *out = (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * N);
-//     fftwf_plan p = fftwf_plan_dft_1d(N, in, out, FFTW_BACKWARD, FFTW_ESTIMATE);
-//     fftwf_execute(p);
-
-//     for (int i = 0; i < N; ++i)
-//         data[i] = Complex(out[i][0], out[i][1]) / static_cast<float>(N);  // normalized
-
-//     fftwf_destroy_plan(p);
-//     fftwf_free(out);
-// }
-
-
 int main() {
     /////////////// CONFIG ///////////////
     const int n_tx = 4;
     const int n_rx = 64;
     const int n_subcarriers = 128;
-    const int mod_order = 4;
+    const int mod_order = 4; // [2, 4, 16]
     const int n_symbols = 200;
     const int k = bits_per_symbol(mod_order);
 
